@@ -1,0 +1,29 @@
+{
+  "name": "morningtests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test1": "node ./node_modules/mocha/bin/mocha ./tests/test1.js",
+    "test1chai": "node ./node_modules/mocha/bin/mocha ./tests/test1chai.js",
+    "test2": "node ./node_modules/mocha/bin/mocha ./tests/test2.js",
+    "test3": "mocha ./tests/test3.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "swaggerTest": "mocha ./swaggerTests/first.js",
+    "testBooks": "mocha ./swaggerTests/testWithBooks.js",
+    "testAccounts": "mocha ./swaggerTests/testWithAccounts.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.1",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.3.1",
+    "log4js": "^6.9.1",
+    "node-fetch": "^3.3.2"
+  }
+}
