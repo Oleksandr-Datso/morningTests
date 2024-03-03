@@ -15,15 +15,7 @@ module.exports = class BookStoreApi extends BaseApi {
       `${this.baseURL}/BookStore/v1/Books`,
       config
     );
-    return response;
-  }
-  async getAllIsbns() {
-    const getAllBooksResult = await this.getAllBooks();
-    //Extract ISBNs from the list of all books
-    const books = getAllBooksResult.data.books;
-    const isbnNumbers = books.map(book => book.isbn); // const isbnNumbers = []; to check if test can be failed
-    
-    return isbnNumbers;
+    return response.data;
   }
   async addBookToTheUserByIsbn(userId, token, isbns) {
     const body = {
@@ -120,6 +112,7 @@ module.exports = class BookStoreApi extends BaseApi {
   async getBookByIsbn(isbn) {
     const config = {
       headers: this.headers,
+      validateStatus: (status) => status < 500,
     };
     const response = await axios.get(
       `${this.baseURL}/BookStore/v1/Book?ISBN=${isbn}`,
@@ -171,6 +164,7 @@ module.exports = class BookStoreApi extends BaseApi {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+      validateStatus: (status) => status < 500,
       data: body_str,
     };
 
@@ -267,31 +261,27 @@ module.exports = class BookStoreApi extends BaseApi {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+      validateStatus: (status) => status === 204 || status === 401,
     };
 
     const { status, data } = await axios.request(config);
 
     return { status, data };
   }
-  async deleteAllBooksFromUserByUserIdWith401Error(userId, token) {
-    const body_str = JSON.stringify({
-      userId: userId,
-      //collectionOfIsbns: isbns.map((isbn) => {return {isbn: isbn}}),
-    });
-
-    let config = {
-      method: "delete",
-      url: `${this.baseURL}/BookStore/v1/Books?UserId=${userId}`,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        validateStatus: (status) => status === 401,
-      },
-    };
-
-    const { status, data } = await axios.request(config);
-
-    return { status, data };
+  async getAllIsbns() {
+    const getAllBooksResult = await this.getAllBooks();
+    //Extract ISBNs from the list of all books
+    const books = getAllBooksResult.books;
+    const isbnNumbers = books.map(book => book.isbn); // const isbnNumbers = []; to check if test can be failed
+    
+    return isbnNumbers;
+  }
+  async getAllIsbnsForEditFlow() {
+    const getAllBooksResult = await this.getAllBooks();
+    // console.log(getAllBooksResult)
+    //Extract ISBNs from the list of all books
+    return books;
+    const isbnNumbers = books.map(book => book.isbn); // const isbnNumbers = []; to check if test can be failed
+    return isbnNumbers.books;
   }
 };
