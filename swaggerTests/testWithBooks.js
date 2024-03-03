@@ -15,31 +15,6 @@ let helpingFunctions = new HelpingFunctions();
 describe("Book Store API Swagger UI checks", function () { 
   let userId, token, randomIsbn;
 
-  //Create a user before test
-  // beforeEach(async function() {
-  //   showLog.info("***Before Test*** - Creating new user");
-  //   ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
-  //   // const userName = testUserData.userName();
-  //   // const password = testUserData.password;
-  //   // const createdUserResults = await accountApi.createNewUser(userName, password);
-  //   // showLog.debug(createdUserResults, userName, password);
-  //   // userId = createdUserResults.data.userID;
-  //   // token = (await accountApi.generateToken(userName, password)).data.token;
-  //   // showLog.info(token);
-  // })
-  // afterEach(async function() {
-  //   showLog.info("***After Test*** - Deleting current user");
-  //   try {
-  //     const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
-  //     expect(resultOfDeletingUser.status).to.equal(204);
-  //   } catch {
-  //     showLog.error("Invalid user data for afterEach hook");
-  //   } finally {
-  //     showLog.trace("***Finnaly we are here!***");
-  //   }
-  // })
-
-// All cases with books from Get list method
 describe("Receive all results when adding book to the user", function() {
   beforeEach(async function() {
     // showLog.info("***Before Test*** - Creating new user");
