@@ -7,6 +7,7 @@ require('dotenv').config({ path: './swaggerTests/.env' });
 const showLog = require('./logger').loggerToExport;
 const DataClass = require('./data');
 const {testUserData} = require('./credentials');
+const HelpingFunctions = require('./helper');
 
 /*
 class BookStoreApi {
@@ -120,168 +121,58 @@ class BookStoreApi {
 */
 let bookStoreApi = new BookStoreApi(process.env.HOST); //тут ловим то, что передали в командной строке HOST="demoqa.com" npm run ....
 let accountApi = new AccountApi(process.env.HOST);
+let helpingFunctions = new HelpingFunctions();
 describe("Book Store API Swagger UI checks", function () { 
-  let userId, token;
+  let userId, token, randomIsbn;
 
   //Create a user before test
+  // beforeEach(async function() {
+  //   showLog.info("***Before Test*** - Creating new user");
+  //   ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
+  //   // const userName = testUserData.userName();
+  //   // const password = testUserData.password;
+  //   // const createdUserResults = await accountApi.createNewUser(userName, password);
+  //   // showLog.debug(createdUserResults, userName, password);
+  //   // userId = createdUserResults.data.userID;
+  //   // token = (await accountApi.generateToken(userName, password)).data.token;
+  //   // showLog.info(token);
+  // })
+  // afterEach(async function() {
+  //   showLog.info("***After Test*** - Deleting current user");
+  //   try {
+  //     const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
+  //     expect(resultOfDeletingUser.status).to.equal(204);
+  //   } catch {
+  //     showLog.error("Invalid user data for afterEach hook");
+  //   } finally {
+  //     showLog.trace("***Finnaly we are here!***");
+  //   }
+  // })
+
+// All cases with books from Get list method
+describe("Receive all results when adding book to the user", function() {
   beforeEach(async function() {
-    showLog.info("***Before Test*** - Creating new user");
-    const userName = testUserData.userName();
-    const password = testUserData.password;
-    const createdUserResults = await accountApi.createNewUser(userName, password);
-    showLog.debug(createdUserResults, userName, password);
-    userId = createdUserResults.data.userID;
-    token = (await accountApi.generateToken(userName, password)).data.token;
-    showLog.info(token);
+    // showLog.info("***Before Test*** - Creating new user");
+    ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
   })
   afterEach(async function() {
-    showLog.info("***After Test*** - Deleting current user");
+    // showLog.debug("***After Test*** - Deleting current user");
     try {
       const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
       expect(resultOfDeletingUser.status).to.equal(204);
     } catch {
       showLog.error("Invalid user data for afterEach hook");
-    } finally {
-      showLog.trace("***Finnaly we are here!***");
-    }
+    } 
   })
-
-// Books checks (only main positive outcome)
-  it("Get list of all books", async function () {
-    const result = await bookStoreApi.getAllBooks();
-
-    showLog.info(result.data);
-    expect(result).to.have.property("status", 200);
-  });
-  it("Add book to the user by isbn book number(s)", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbnNumbers").to.be.greaterThan(0);
-    let count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
-    // or don't care and use -> var isbnNumber = [listOfAllBooks.data.books[0]];
-
-    // Add books to the user's collection
-    const resultOfAddingBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-
-    showLog.debug(resultOfAddingBook.data); //if showLog.info(result); тогда мы увидим { status: 201, data: { books: [ [Object], [Object] ] } }, а если showLog.info(result.data), то isbns 
-    expect(resultOfAddingBook).to.have.property("status", 201);
-  });
-  it("Delete book from the user by isbn book number(s)", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
-
-    // Delete book from user's collection
-    const resultOfDeletingBook = await bookStoreApi.deleteBookFromUserByIsbn(userId, token, [randomIsbn]);
-    showLog.warn(resultOfDeletingBook);
-    expect(resultOfDeletingBook).to.have.property("status", 204);
-  });
-  it("Delete all books from the user by user id", async function() {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomFirstIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    while(randomSecondIsbnIndex === randomFirstIsbnIndex) {
-      showLog.error("Oops, the isbn is the same");
-      randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    }
-    const randomFirstIsbn = isbnNumbers[randomFirstIsbnIndex];
-    const randomSecondIsbn = isbnNumbers[randomSecondIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomFirstIsbn, randomSecondIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
-
-    // Delete all books from the user's collection
-    const resultOfDeletingBooks = await bookStoreApi.deleteAllBooksFromUserByUserId(userId, token);
-    showLog.warn(resultOfDeletingBooks);
-    expect(resultOfDeletingBooks).to.have.property("status", 204);
-  });
-  it("It woooooooooooooooooooooorks!!!!! book instead of books in url... -> Get information about book by its isbn", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
-
-    const informationAboutBookByIsbn = await bookStoreApi.getBookByIsbn([randomIsbn]);
-
-    showLog.debug(informationAboutBookByIsbn.data);
-    expect(informationAboutBookByIsbn).to.have.property("status", 200);
-  });
-  xit("Error on demoqa ?! Looks like yes (checked) - Edit book by isbn book number for current user", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomFirstIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    while(randomSecondIsbnIndex === randomFirstIsbnIndex) {
-      showLog.error("Oops, the isbn is the same");
-      randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    }
-    const randomFirstIsbn = isbnNumbers[randomFirstIsbnIndex];
-    const randomSecondIsbn = isbnNumbers[randomSecondIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomFirstIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
-
-    const result = await bookStoreApi.editBookByIsbnForUser(userId, token, [randomFirstIsbn], [randomSecondIsbn]);
-
-    showLog.info(result.data); //if showLog.info(result); тогда мы увидим { status: 201, data: { books: [ [Object], [Object] ] } }, а если showLog.info(result.data), то isbns 
-    expect(result).to.have.property("status", 201);
-  });
-
-
-// All cases with books from Get list method
-//Get Books. Method the same as above ?
-  it("Add book(s) to the user by isbn book number(s)", async function () {
-      const isbnNumbers = await bookStoreApi.getAllIsbns();
-
-      // const getAllBooksResult = await bookStoreApi.getAllBooks();
-    // //Extract ISBNs from the list of all books
-    // const books = getAllBooksResult.data.books;
-    //   const isbnNumbers = books.map(book => book.isbn); // const isbnNumbers = []; to check if test can be failed
-    
-    // A custom error message can be given as the second argument to expect
-      expect(isbnNumbers.length, "No books in isbnNumbers").to.be.greaterThan(0);
-
-      let count = isbnNumbers.length;
-      showLog.fatal(isbnNumbers);
-      showLog.error(`Number of isbns in the list is ${count}`);
-
-      const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-      const randomIsbn = isbnNumbers[randomIsbnIndex];
-      showLog.error(randomIsbn);
-    
-      const userWithBooks = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-      showLog.info(userWithBooks.data); 
-      expect(userWithBooks).to.have.property("status", 201);
-  });
-//Receive all results when adding book to the user
   it("Add book to the user by isbn book number", async function () {
     const isbnNumbers = await bookStoreApi.getAllIsbns();
     expect(isbnNumbers.length, "No books in isbnNumbers").to.be.greaterThan(0);
     let count = isbnNumbers.length;
     const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
     const randomIsbn = isbnNumbers[randomIsbnIndex];
-    // or don't care and use -> var isbnNumber = [listOfAllBooks.data.books[0]];
 
     // Add books to the user's collection
     const resultOfAddingBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-
-    showLog.debug(resultOfAddingBook.data); //if showLog.info(result); тогда мы увидим { status: 201, data: { books: [ [Object], [Object] ] } }, а если showLog.info(result.data), то isbns 
     expect(resultOfAddingBook).to.have.property("status", 201);
   });
   it("Goal is to receive error 401 for Add book to the user by isbn book number", async function () {
@@ -291,12 +182,9 @@ describe("Book Store API Swagger UI checks", function () {
     const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
     const randomIsbn = isbnNumbers[randomIsbnIndex];
     token = "Oops, replaced token ^_^";
-    showLog.info("Token = " + token);
 
     // Add books to the user's collection
     const resultOfAddingBookForUnauthorizedUser = await bookStoreApi.addBookToTheUserByIsbnWith401Error(userId, token, [randomIsbn]);
-
-    showLog.debug(resultOfAddingBookForUnauthorizedUser.data); 
     expect(resultOfAddingBookForUnauthorizedUser).to.have.property("status", 401);
   });
   it("Goal is to receive error 400 for Add book to the user by isbn book number", async function () {
@@ -305,148 +193,124 @@ describe("Book Store API Swagger UI checks", function () {
     let count = isbnNumbers.length;
     const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
     const randomIsbn = isbnNumbers[randomIsbnIndex] + `invalidNumberToSeeError`;
-    showLog.error("Random ISBN = " + randomIsbn);
 
     // Add books to the user's collection
     const resultOfAddingBookWithWrongData = await bookStoreApi.addBookToTheUserByIsbnWith400Error(userId, token, [randomIsbn]);
-    showLog.debug(resultOfAddingBookWithWrongData.data);
     expect(resultOfAddingBookWithWrongData).to.have.property("status", 400);
   });
-
-//Receive all results when deleting the book from the user
+})
+describe("Receive all results when deleting the book from the user", function() {
+  beforeEach(async function() {
+    ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
+  })
+  afterEach(async function() {
+    try {
+      const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
+      expect(resultOfDeletingUser.status).to.equal(204);
+    } catch {
+      showLog.error("Invalid user data for afterEach hook");
+    } 
+  })
   it("Delete book from the user by isbn book number", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
+    randomIsbn = await helpingFunctions.getAssignedIsbn(userId, token);
 
     // Delete book from user's collection
     const resultOfDeletingBook = await bookStoreApi.deleteBookFromUserByIsbn(userId, token, [randomIsbn]);
-    showLog.warn(resultOfDeletingBook);
     expect(resultOfDeletingBook).to.have.property("status", 204);
   });
   it("Goal is 400 error for Delete book from the user by isbn book number", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    let randomIsbn = isbnNumbers[randomIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
+    randomIsbn = await helpingFunctions.getAssignedIsbn(userId, token);
+    let oldRandomIsbn = randomIsbn;
 
     // Delete book from user's collection
     randomIsbn = "Oops ISBN is chnaged ^_^";
-    const resultOfDeletingBook = await bookStoreApi.deleteBookFromUserByIsbnWith400Error(userId, token, randomIsbn);
-    showLog.warn(resultOfDeletingBook);
+    const resultOfDeletingBook = await bookStoreApi.deleteBookFromUserByIsbn(userId, token, randomIsbn);
     expect(resultOfDeletingBook).to.have.property("status", 400);
+    randomIsbn = oldRandomIsbn;
   });
   it("Goal is 401 error for Delete book from the user by isbn book number", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
+    randomIsbn = await helpingFunctions.getAssignedIsbn(userId, token);
 
     //Change token to receive 401 error
     token = "Oops, wrong token ^_^";
-    showLog.info("Token = " + token);
 
     // Delete book from user's collection
-    const resultOfDeletingBookForUnauthorizedUser = await bookStoreApi.deleteBookFromUserByIsbnWith401Error(userId, token, [randomIsbn]);
-    showLog.warn(resultOfDeletingBookForUnauthorizedUser);
+    const resultOfDeletingBookForUnauthorizedUser = await bookStoreApi.deleteBookFromUserByIsbn(userId, token, [randomIsbn]);
     expect(resultOfDeletingBookForUnauthorizedUser).to.have.property("status", 401);
   });
-//Get information about 1 book by random ISBN
+})
+describe("Get information about 1 book by random ISBN", function() {
+  beforeEach(async function() {
+    ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
+  })
+  afterEach(async function() {
+    try {
+      const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
+      expect(resultOfDeletingUser.status).to.equal(204);
+    } catch {
+      showLog.error("Invalid user data for afterEach hook");
+    } 
+  })
   it("Get information about book by its isbn", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex];
+    randomIsbn = await helpingFunctions.getAssignedIsbn(userId, token);
 
     const informationAboutBookByIsbn = await bookStoreApi.getBookByIsbn([randomIsbn]);
-
-    showLog.debug(informationAboutBookByIsbn.data);
     expect(informationAboutBookByIsbn).to.have.property("status", 200);
   });
   it("Goal is 400 error for Get information about book by its isbn chosen randomly", async function () {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomIsbn = isbnNumbers[randomIsbnIndex] + " and unknown ISBN text";
-    showLog.info(randomIsbn);
+    randomIsbn = (await helpingFunctions.getAssignedIsbn(userId, token)) + " and unknown ISBN text";
 
-    const informationAboutBookByIsbn400Error = await bookStoreApi.getBookByIsbnWith400Error([randomIsbn]);
-
-    showLog.debug(informationAboutBookByIsbn400Error.data);
+    const informationAboutBookByIsbn400Error = await bookStoreApi.getBookByIsbn([randomIsbn]);
     expect(informationAboutBookByIsbn400Error).to.have.property("status", 400);
   });
-//Delete all books from user
+})
+describe("Delete all books from user", function() {
+  beforeEach(async function() {
+    ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
+    await helpingFunctions.getUserWithTwoBooks(userId, token);
+  })
+  afterEach(async function() {
+    try {
+      const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
+      expect(resultOfDeletingUser.status).to.equal(204);
+    } catch {
+      showLog.error("Invalid user data for afterEach hook");
+    } 
+  })
   it("Delete all books from the user by user id", async function() {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomFirstIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    while(randomSecondIsbnIndex === randomFirstIsbnIndex) {
-      showLog.error("Oops, the isbn is the same");
-      randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    }
-    const randomFirstIsbn = isbnNumbers[randomFirstIsbnIndex];
-    const randomSecondIsbn = isbnNumbers[randomSecondIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomFirstIsbn, randomSecondIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
-
-    // Delete all books from the user's collection
     const resultOfDeletingBooks = await bookStoreApi.deleteAllBooksFromUserByUserId(userId, token);
-    showLog.warn(resultOfDeletingBooks);
     expect(resultOfDeletingBooks).to.have.property("status", 204);
   });
-  xit("ERROR why?... I want 401 and 401 is shown!!! Goal is 401 error for Delete all books from the the user by user id", async function() {
-    const isbnNumbers = await bookStoreApi.getAllIsbns();
-    expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
-    const count = isbnNumbers.length;
-    const randomFirstIsbnIndex = await DataClass.generateIsbnIndex(count);
-    const randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    while(randomSecondIsbnIndex === randomFirstIsbnIndex) {
-      showLog.error("Oops, the isbn is the same");
-      randomSecondIsbnIndex = await DataClass.generateIsbnIndex(count);
-    }
-    const randomFirstIsbn = isbnNumbers[randomFirstIsbnIndex];
-    const randomSecondIsbn = isbnNumbers[randomSecondIsbnIndex];
-
-    // Add books to the user's collection
-    const userWithAddedBook = await bookStoreApi.addBookToTheUserByIsbn(userId, token, [randomFirstIsbn, randomSecondIsbn]);
-    showLog.error(userWithAddedBook.data); 
-    expect(userWithAddedBook, "The list of books for current user is empty").to.be.not.equal(null);
-
-    // Delete all books from the user's collection
+  it("FIXED!!! Goal is 401 error for Delete all books from the the user by user id", async function() {
+    let oldUserId = userId;
     userId = "Oops, user ID is changed ^_^";
-    showLog.error(userId);
-    const resultOfDeletingBooks = await bookStoreApi.deleteAllBooksFromUserByUserIdWith401Error(userId, token);
-    showLog.warn(resultOfDeletingBooks.data);
+    const resultOfDeletingBooks = await bookStoreApi.deleteAllBooksFromUserByUserId(userId, token);
     expect(resultOfDeletingBooks).to.have.property("status", 401);
+    userId = oldUserId;
   });
-//Put 
-  xit("Error on demoqa ?! Looks like yes (checked) - Edit book by isbn book number for current user", async function () {
+})
+
+
+
+// describe.only("Not working :( - Get information about all books", async function() {
+//   beforeEach(async function() {
+//     ({userId, token} = await helpingFunctions.givenUserWithTokenAndUserId());
+//   })
+//   afterEach(async function() {
+//     try {
+//       const resultOfDeletingUser = await accountApi.deleteUser(userId, token);
+//       expect(resultOfDeletingUser.status).to.equal(204);
+//     } catch {
+//       showLog.error("Invalid user data for afterEach hook");
+//     } 
+//   })
+//   it("all results", async function() {
+//     const informationAboutBookByIsbn = await helpingFunctions.getAssignedAllIsbns(userId, token);
+//     showLog.warn(informationAboutBookByIsbn)
+//     expect(informationAboutBookByIsbn).to.have.property("status", 200);
+//   })
+// })
+  xit("Error on demoqa ?! Looks like yes (checked) - (Put) Edit book by isbn book number for current user", async function () {
     const isbnNumbers = await bookStoreApi.getAllIsbns();
     expect(isbnNumbers.length, "No books in isbn Numbers").to.be.greaterThan(0);
     const count = isbnNumbers.length;
@@ -469,5 +333,4 @@ describe("Book Store API Swagger UI checks", function () {
     showLog.info(result.data); //if showLog.info(result); тогда мы увидим { status: 201, data: { books: [ [Object], [Object] ] } }, а если showLog.info(result.data), то isbns 
     expect(result).to.have.property("status", 201);
   });
-
 });

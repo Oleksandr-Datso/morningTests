@@ -135,20 +135,11 @@ module.exports = class AccountApi extends BaseApi{
     async getUser(userID, token) {
         const config = {
             headers: {...this.headers, Authorization: `Bearer ${token}`},
-            validateStatus: (status) => status === 200,
+            validateStatus: (status) => (status === 200 || status === 401),
         }
 
         const {status, data} = await axios.get(`${this.baseURL}/Account/v1/User/${userID}`, config);
         return {status, data};
-    }
-    async getUser401Error(userID, token) {
-      const config = {
-          headers: {...this.headers, Authorization: `Bearer ${token}`},
-          validateStatus: (status) => status === 401,
-      }
-
-      const {status, data} = await axios.get(`${this.baseURL}/Account/v1/User/${userID}`, config);
-      return {status, data};
     }
     async deleteUser401Error(userID, token) {
       const config = {
